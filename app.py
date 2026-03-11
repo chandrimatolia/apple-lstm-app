@@ -229,13 +229,13 @@ def load_all_models(_train_data, _a_scaler):
     X1f,y1f = preprocess_lstm(pd.DataFrame(_train_data["Close"]), 10, 1, 1)
     X5f,y5f = preprocess_lstm(_train_data, 10, 1, 5)
     X7d,y7d = preprocess_lstm(_train_data, 7, 2, N_FEATURES)
-    if models["lstm_exp"]   is None: models["lstm_exp"]   = qfit(build_lstm(10, N_FEATURES, 64), X10, y10)
-    if models["lstm_grid"]  is None: models["lstm_grid"]  = qfit(build_lstm(15, N_FEATURES, 128), X15, y15)
-    if models["rnn_single"] is None: models["rnn_single"] = qfit(build_rnn_single(10, 1, 64), X1f, y1f)
-    if models["rnn_multi"]  is None: models["rnn_multi"]  = qfit(build_rnn_multi(10, 5, 64), X5f, y5f)
-    if models["rnn_grid"]   is None: models["rnn_grid"]   = qfit(build_rnn_multi(15, N_FEATURES, 128), X15, y15)
-    if models["cnn"]        is None: models["cnn"]        = qfit(build_cnn(10, N_FEATURES), X10, y10, 15)
-    if models["deep"]       is None: models["deep"]       = qfit(build_deep_lstm(7, N_FEATURES, 192, 40, 2), X7d, y7d)
+    if models["lstm_exp"]   is None: models["lstm_exp"]   = qfit(build_lstm(optimiser="adam", neurons=64,  n_inputs=10, n_features=N_FEATURES), X10, y10)
+    if models["lstm_grid"]  is None: models["lstm_grid"]  = qfit(build_lstm(optimiser="adam", neurons=128, n_inputs=15, n_features=N_FEATURES), X15, y15)
+    if models["rnn_single"] is None: models["rnn_single"] = qfit(build_rnn_single(optimiser="adam", neurons=64,  n_inputs=10, n_features=1), X1f, y1f)
+    if models["rnn_multi"]  is None: models["rnn_multi"]  = qfit(build_rnn_multi(optimiser="adam",  neurons=64,  n_inputs=10, n_features=5), X5f, y5f)
+    if models["rnn_grid"]   is None: models["rnn_grid"]   = qfit(build_rnn_multi(optimiser="adam",  neurons=128, n_inputs=15, n_features=N_FEATURES), X15, y15)
+    if models["cnn"]        is None: models["cnn"]        = qfit(build_cnn(n_inputs=10, n_features=N_FEATURES), X10, y10, 15)
+    if models["deep"]       is None: models["deep"]       = qfit(build_deep_lstm(units=192, dense_units=40, n_inputs=7, n_features=N_FEATURES, n_outputs=2), X7d, y7d)
     return models
 
 def load_csv_if_exists(fn):
