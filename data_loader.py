@@ -29,21 +29,44 @@ CLOSE_IDX    = 3      # index of 'Close' inside FEATURE_COLS
 def fetch_aapl_data(start: str = "1980-01-01", end: str = None) -> pd.DataFrame:
     """
     Download full AAPL OHLCV + Adj Close history from Yahoo Finance.
-    Uses yf.download with auto_adjust=False to preserve Adj Close column.
+    Uses a requests session with browser-like headers to avoid being
+    blocked by Yahoo Finance rate limiting in restricted environments
+    such as Hugging Face Spaces.
     """
-    df = yf.download("AAPL", start=start, end=end,
-                     auto_adjust=False, progress=False)
+    import requests
+
+    # Browser-like headers prevent Yahoo Finance from blocking the request
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        ),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+    })
+
+    df = yf.download(
+        "AAPL",
+        start=start,
+        end=end,
+        auto_adjust=False,
+        progress=False,
+        session=session,
+    )
 
     if df is None or len(df) == 0:
         raise ValueError("yfinance returned empty data for AAPL")
 
     df = df.reset_index()
 
-    # yfinance MultiIndex columns — flatten if needed
+    # Flatten MultiIndex columns if present (newer yfinance versions)
     if isinstance(df.columns, pd.MultiIndex):
-        df.columns = [col[0] if col[1] == "" else col[0] for col in df.columns]
+        df.columns = [col[0] for col in df.columns]
 
-    # Rename Date/Datetime
     if "Datetime" in df.columns:
         df = df.rename(columns={"Datetime": "Date"})
 
