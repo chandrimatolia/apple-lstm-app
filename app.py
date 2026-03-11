@@ -171,9 +171,12 @@ def dark_fig(height: int = 420):
 @st.cache_resource(show_spinner=False)
 def load_data():
     try:
-        return fetch_aapl_data()
-    except Exception:
-        st.warning("⚠️  Could not reach Yahoo Finance – using bundled AAPL.csv")
+        df = fetch_aapl_data()
+        if df is None or len(df) == 0:
+            raise ValueError("Empty DataFrame returned from yfinance")
+        return df
+    except Exception as e:
+        st.warning(f"⚠️  Could not fetch live data ({e}) – using bundled AAPL.csv")
         return load_from_csv("AAPL.csv")
 
 

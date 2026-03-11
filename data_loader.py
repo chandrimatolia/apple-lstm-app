@@ -29,15 +29,21 @@ CLOSE_IDX    = 3      # index of 'Close' inside FEATURE_COLS
 def fetch_aapl_data(start: str = "1980-01-01", end: str = None) -> pd.DataFrame:
     """
     Download full AAPL OHLCV + Adj Close history from Yahoo Finance.
-    Returns a clean DataFrame sorted by date with exactly the same column
-    set as the original AAPL.csv used in the notebook.
+    Uses yf.download with auto_adjust=False to preserve Adj Close column.
     """
-    ticker = yf.Ticker("AAPL")
-    # auto_adjust=False preserves the separate 'Adj Close' column
-    df = ticker.history(start=start, end=end, auto_adjust=False)
+    df = yf.download("AAPL", start=start, end=end,
+                     auto_adjust=False, progress=False)
+
+    if df is None or len(df) == 0:
+        raise ValueError("yfinance returned empty data for AAPL")
+
     df = df.reset_index()
 
-    # yfinance may return 'Datetime' for intraday; normalise to 'Date'
+    # yfinance MultiIndex columns — flatten if needed
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = [col[0] if col[1] == "" else col[0] for col in df.columns]
+
+    # Rename Date/Datetime
     if "Datetime" in df.columns:
         df = df.rename(columns={"Datetime": "Date"})
 
