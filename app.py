@@ -89,13 +89,15 @@ h1, h2, h3 { font-family: 'Space Mono', monospace; }
 
 .tag {
     display: inline-block;
-    background: #1e293b;
-    border: 1px solid #334155;
+    background: #1e3a5f;
+    border: 1px solid #3b82f6;
     border-radius: 4px;
-    padding: 2px 8px;
-    font-size: 0.72rem;
-    margin: 2px;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    margin: 3px 2px;
     font-family: 'Space Mono', monospace;
+    color: #93c5fd !important;
+    font-weight: 600;
 }
 
 .result-box {
@@ -861,6 +863,7 @@ streamlit run app.py
             "scikit-learn", "Streamlit", "Plotly", "yfinance",
             "NumPy", "pandas", "joblib",
         ]
+        tag_html = "".join(f"<span class='tag'>{t}</span>" for t in tags)
         st.markdown(
-            " ".join(f"<span class='tag'>{t}</span>" for t in tags),
+            f"<div style='line-height:2.2;padding:8px 0'>{tag_html}</div>",
             unsafe_allow_html=True)
