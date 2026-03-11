@@ -170,14 +170,18 @@ def dark_fig(height: int = 420):
 
 @st.cache_resource(show_spinner=False)
 def load_data():
+    """
+    Try live yfinance data first. If blocked or empty (common on HF Spaces),
+    fall back to bundled AAPL.csv silently — the sidebar shows which source
+    is active via the data source indicator.
+    """
     try:
         df = fetch_aapl_data()
         if df is None or len(df) == 0:
-            raise ValueError("Empty DataFrame returned from yfinance")
-        return df
-    except Exception as e:
-        st.warning(f"⚠️  Could not fetch live data ({e}) – using bundled AAPL.csv")
-        return load_from_csv("AAPL.csv")
+            raise ValueError("Empty DataFrame")
+        return df, True   # (dataframe, is_live)
+    except Exception:
+        return load_from_csv("AAPL.csv"), False   # (dataframe, is_live)
 
 
 @st.cache_resource(show_spinner=False)
@@ -290,7 +294,7 @@ def compute_metrics(y_true, y_pred):
 # ══════════════════════════════════════════════════════════════════════════════
 
 with st.spinner("🔄  Loading data & models — this may take a moment …"):
-    df_raw = load_data()
+    df_raw, _is_live = load_data()
     train_data, test_data, a_scaler, dates = preprocess(df_raw)
 
     # If scaler was saved by train.py, use that one (ensures consistency)
@@ -356,6 +360,12 @@ with st.sidebar:
             "Not financial advice.</div>", unsafe_allow_html=True)
 
     st.markdown("---")
+    # Data source indicator
+    latest_date = df_raw["Date"].iloc[-1].date()
+    if _is_live:
+        st.caption(f"🟢 **Live data** · Last: {latest_date}")
+    else:
+        st.caption(f"🟡 **Bundled CSV** · Last: {latest_date}")
     st.caption("TensorFlow · Keras · Streamlit · Plotly · yfinance")
 
 
@@ -452,7 +462,7 @@ with tab2:
 
     y_true, y_pred = get_predictions(
         models[sel_key], _test_df, a_scaler,
-        n_inputs=sel_nin, n_predictions=sel_npred, n_features=sel_nfeat)
+        n_inputs=sel_nin, n_predictions=sel_npred, n_feat=sel_nfeat)
 
     # Align dates to test window
     n_plot = min(len(y_true), len(y_pred))

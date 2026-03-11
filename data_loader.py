@@ -29,13 +29,15 @@ CLOSE_IDX    = 3      # index of 'Close' inside FEATURE_COLS
 def fetch_aapl_data(start: str = "1980-01-01", end: str = None) -> pd.DataFrame:
     """
     Download full AAPL OHLCV + Adj Close history from Yahoo Finance.
-    Uses a requests session with browser-like headers to avoid being
-    blocked by Yahoo Finance rate limiting in restricted environments
-    such as Hugging Face Spaces.
+    Tries multiple approaches with a short timeout so it fails fast
+    in restricted environments (e.g. Hugging Face Spaces).
     """
     import requests
+    import socket
 
-    # Browser-like headers prevent Yahoo Finance from blocking the request
+    # Short timeout — fail fast if network is blocked
+    socket.setdefaulttimeout(10)
+
     session = requests.Session()
     session.headers.update({
         "User-Agent": (
@@ -45,10 +47,9 @@ def fetch_aapl_data(start: str = "1980-01-01", end: str = None) -> pd.DataFrame:
         ),
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.5",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
     })
 
+    # Try yf.download with session
     df = yf.download(
         "AAPL",
         start=start,
@@ -56,6 +57,7 @@ def fetch_aapl_data(start: str = "1980-01-01", end: str = None) -> pd.DataFrame:
         auto_adjust=False,
         progress=False,
         session=session,
+        timeout=10,
     )
 
     if df is None or len(df) == 0:
