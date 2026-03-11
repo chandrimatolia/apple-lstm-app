@@ -819,7 +819,24 @@ index 3 = Close in [Open, High, Low, **Close**, Adj Close, Volume]
 - GridSearchCV: `optimiser=['adam','sgd'] × neurons=[32,64,128]`, cv=2
 - Keras Tuner Hyperband: units 32–448, input sizes 10–30 (single-step)
 - Keras Tuner Hyperband: units 192–252, dense 10–50 (2-day model)
+
+**7. Tech Stack**
         """)
+        tags = [
+            "Python 3.11", "TensorFlow 2.x", "Keras", "keras-tuner",
+            "scikit-learn", "Streamlit", "Plotly", "yfinance",
+            "NumPy", "pandas", "joblib",
+        ]
+        tag_html = "".join(
+            f"<span style='display:inline-block; background:#1e3a5f; color:#93c5fd; "
+            f"border:1px solid #3b82f6; border-radius:4px; padding:3px 10px; "
+            f"font-size:0.75rem; margin:3px 2px; font-family:monospace; font-weight:600'>"
+            f"{t}</span>"
+            for t in tags
+        )
+        st.markdown(
+            f"<div style='line-height:2.4;padding:8px 0'>{tag_html}</div>",
+            unsafe_allow_html=True)
 
     with col_b:
         st.markdown("""
@@ -857,19 +874,4 @@ streamlit run app.py
 ```
         """)
 
-        st.markdown("### Tech Stack")
-        tags = [
-            "Python 3.11", "TensorFlow 2.x", "Keras", "keras-tuner",
-            "scikit-learn", "Streamlit", "Plotly", "yfinance",
-            "NumPy", "pandas", "joblib",
-        ]
-        tag_html = "".join(
-            f"<span style='display:inline-block; background:#1e3a5f; color:#93c5fd; "
-            f"border:1px solid #3b82f6; border-radius:4px; padding:3px 10px; "
-            f"font-size:0.75rem; margin:3px 2px; font-family:monospace; font-weight:600'>"
-            f"{t}</span>"
-            for t in tags
-        )
-        st.markdown(
-            f"<div style='line-height:2.4;padding:8px 0'>{tag_html}</div>",
-            unsafe_allow_html=True)
+
