@@ -1,5 +1,5 @@
 """
-app.py  –  Apple Stock LSTM · Portfolio Demo
+app.py  –  Apple Stock LSTM · Deep Learning
 Run with:  streamlit run app.py
 """
 
@@ -630,7 +630,7 @@ with tab4:
 with tab5:
     st.markdown("<div class='kicker'>Research Design & Implementation</div>", unsafe_allow_html=True)
     st.markdown("<h3 style='margin:2px 0 4px'>Methodology</h3>", unsafe_allow_html=True)
-    st.markdown("<div class='caption-text'>A faithful reproduction and extension of a Jupyter notebook exploring deep learning approaches to equity price forecasting. Every transformation from raw ticker data to model evaluation is described below.</div>", unsafe_allow_html=True)
+    st.markdown("<div class='caption-text'>Exploring deep learning approaches to equity price forecasting. Every transformation from raw ticker data to model evaluation is described below.</div>", unsafe_allow_html=True)
     st.markdown("<div style='border-top:2px solid #c9a84c;margin:4px 0 20px'></div>", unsafe_allow_html=True)
 
     col_a,col_b = st.columns([1,1])
