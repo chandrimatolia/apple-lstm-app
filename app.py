@@ -863,7 +863,13 @@ streamlit run app.py
             "scikit-learn", "Streamlit", "Plotly", "yfinance",
             "NumPy", "pandas", "joblib",
         ]
-        tag_html = "".join(f"<span class='tag'>{t}</span>" for t in tags)
+        tag_html = "".join(
+            f"<span style='display:inline-block; background:#1e3a5f; color:#93c5fd; "
+            f"border:1px solid #3b82f6; border-radius:4px; padding:3px 10px; "
+            f"font-size:0.75rem; margin:3px 2px; font-family:monospace; font-weight:600'>"
+            f"{t}</span>"
+            for t in tags
+        )
         st.markdown(
-            f"<div style='line-height:2.2;padding:8px 0'>{tag_html}</div>",
+            f"<div style='line-height:2.4;padding:8px 0'>{tag_html}</div>",
             unsafe_allow_html=True)
