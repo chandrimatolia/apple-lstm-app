@@ -29,10 +29,7 @@ CLOSE_IDX    = 3      # index of 'Close' inside FEATURE_COLS
 def fetch_aapl_data(start: str = "1980-01-01", end: str = None) -> pd.DataFrame:
     """
     Download full AAPL OHLCV + Adj Close history from Yahoo Finance.
-    Tries multiple approaches with a short timeout so it fails fast
-    in restricted environments (e.g. Hugging Face Spaces).
     """
-    # Let yfinance manage its own session (required for newer versions)
     df = yf.download(
         "AAPL",
         start=start,
