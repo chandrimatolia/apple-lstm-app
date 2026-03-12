@@ -288,6 +288,7 @@ with st.sidebar:
     sel_key, sel_nin, sel_npred, sel_nfeat = MODEL_OPTIONS[selected_label]
     show_confidence = st.toggle("Show 95% prediction band", value=True)
     show_volume     = st.toggle("Show volume overlay", value=False)
+    show_log_scale  = st.toggle("Log scale (price chart)", value=False)
 
     st.markdown("<hr style='border-color:#222;margin:16px 0'>", unsafe_allow_html=True)
     arch_map = {
@@ -388,8 +389,9 @@ with tab1:
     Has AAPL's 45-year compounding made it the most consequential equity in modern portfolio theory?
   </div>
   <div style='font-family:Source Serif 4,serif;font-size:0.8rem;color:#666;margin-top:3px'>
-    Daily closing price 1980–present with 50-day &amp; 200-day EMAs, train/test split at {split_str2}, and key product-cycle inflection points annotated.
-    {'Volume overlay enabled — bars show daily turnover, spikes correlate with regime transitions.' if show_volume else 'Toggle volume overlay in sidebar to reveal liquidity regime shifts.'}
+    {'Log scale active — compounding trajectory visible across all eras.' if show_log_scale else 'Linear scale · toggle Log Scale in sidebar to reveal early compounding structure hidden by post-2010 price growth.'}
+    {'Volume overlay enabled — bars show daily turnover, spikes correlate with regime transitions.' if show_volume else ''}
+    50-day &amp; 200-day MAs · train/test split at {split_str2} · key product-cycle inflection points annotated.
   </div>
 </div>
 """, unsafe_allow_html=True)
@@ -421,6 +423,8 @@ with tab1:
         fig1.update_yaxes(gridcolor="#1e1e1e",showline=False,
                            tickfont=dict(family="JetBrains Mono,monospace",size=10,color="#666"))
         fig1.update_yaxes(tickprefix="$", row=1, col=1)
+        if show_log_scale:
+            fig1.update_yaxes(type="log", row=1, col=1)
         fig1.update_annotations(font=dict(family="Playfair Display,serif",color="#c9a84c",size=11))
 
         # Price + MAs
@@ -520,6 +524,15 @@ with tab1:
             except: pass
 
     fig1.update_layout(xaxis_title="", yaxis_title="Closing Price (USD)")
+    if show_log_scale:
+        fig1.update_yaxes(type="log", tickprefix="$")
+        fig1.add_annotation(
+            x=df_raw["Date"].iloc[int(len(df_raw)*0.15)],
+            y=float(df_plot["Close"].quantile(0.7)),
+            text="Log scale: equal vertical distance = equal % gain",
+            showarrow=False,
+            font=dict(size=8, color="#c9a84c", family="JetBrains Mono,monospace"),
+            bgcolor="rgba(13,13,13,0.85)", bordercolor="#c9a84c", borderwidth=1)
     st.plotly_chart(fig1, use_container_width=True)
 
     split_str = split_date.strftime('%b %Y') if hasattr(split_date,'strftime') else str(split_date)
@@ -1462,7 +1475,7 @@ Full architecture: LSTM({best_hps['units']}, return_sequences=True) → LSTM({be
 with tab5:
     st.markdown("<div class='kicker'>Research Design & Implementation</div>", unsafe_allow_html=True)
     st.markdown("<h3 style='margin:2px 0 4px'>Methodology</h3>", unsafe_allow_html=True)
-    st.markdown("<div class='caption-text'>A faithful reproduction and extension of a Jupyter notebook exploring deep learning approaches to equity price forecasting. Every transformation from raw ticker data to model evaluation is described below.</div>", unsafe_allow_html=True)
+    st.markdown("<div class='caption-text'>Exploring deep learning approaches to equity price forecasting. Every transformation from raw ticker data to model evaluation is described below.</div>", unsafe_allow_html=True)
     st.markdown("<div style='border-top:2px solid #c9a84c;margin:4px 0 20px'></div>", unsafe_allow_html=True)
 
     col_a,col_b = st.columns([1,1])
