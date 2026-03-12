@@ -875,7 +875,7 @@ with tab2:
         height=560,
         legend=dict(bgcolor="rgba(13,13,13,0.9)",bordercolor="#2a2a2a",borderwidth=1,
                     font=dict(family="JetBrains Mono,monospace",size=10,color="#888"),
-                    x=0.01,y=0.18,xanchor="left",yanchor="bottom"),
+                    x=0.01,y=0.99,xanchor="left",yanchor="top"),
         margin=dict(l=60,r=40,t=20,b=50))
     fig2.update_xaxes(gridcolor="#1e1e1e",showline=True,linecolor="#2a2a2a",
                        tickfont=dict(family="JetBrains Mono,monospace",size=10,color="#666"))
@@ -922,10 +922,10 @@ with tab2:
             bgcolor="rgba(13,13,13,0.88)",bordercolor="#f87171",borderwidth=1,
             ax=44,ay=-44,row=1,col=1)
 
-    # Annotate directional accuracy — top right, away from legend
+    # Annotate directional accuracy — use x2/y2 paper refs for subplot row 1
     fig2.add_annotation(
-        xref="paper", yref="paper",
-        x=0.99, y=0.99,
+        xref="x domain", yref="y domain",
+        x=0.99, y=0.97,
         text=f"Directional accuracy: {trend_correct:.1f}%",
         showarrow=False,
         font=dict(size=9,color="#c9a84c",family="JetBrains Mono,monospace"),
