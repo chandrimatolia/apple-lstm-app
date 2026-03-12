@@ -541,6 +541,264 @@ with tab1:
             with dc[i]:
                 st.markdown(f"<div class='metric-card'><div class='metric-label'>{row['Period']}</div><div class='metric-value' style='font-size:1.2rem;color:{c}'>{row['Return']}</div><div class='metric-sub'>{row['Start']} → {row['End']}</div></div>", unsafe_allow_html=True)
 
+    # ── CHART 2: Annual Returns Heatmap ──────────────────────────────────────
+    st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
+    st.markdown("""
+<div style='margin-bottom:6px'>
+  <div style='font-family:Playfair Display,serif;font-size:1.1rem;font-weight:700;color:#e8e0d4;line-height:1.3'>
+    Which years made fortunes — and which erased them?
+  </div>
+  <div style='font-family:Source Serif 4,serif;font-size:0.8rem;color:#666;margin-top:3px'>
+    Annual total return by calendar year. Each cell = Jan 1 → Dec 31 close-to-close return.
+    Red = drawdown year · Gold = best quintile. Colour scale centred at 0%.
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+    df_raw["Year"] = df_raw["Date"].dt.year
+    annual_ret = {}
+    for yr_val, grp in df_raw.groupby("Year"):
+        grp = grp.sort_values("Date")
+        if len(grp) >= 2:
+            annual_ret[yr_val] = (grp["Close"].iloc[-1] - grp["Close"].iloc[0]) / grp["Close"].iloc[0] * 100
+    ann_years = sorted(annual_ret.keys())
+    ann_vals  = [annual_ret[y] for y in ann_years]
+
+    # Build 2-row grid: split years into two rows of ~equal length for readability
+    mid = len(ann_years) // 2
+    rows_yr  = [ann_years[:mid], ann_years[mid:]]
+    rows_val = [ann_vals[:mid],  ann_vals[mid:]]
+
+    fig_heat = make_subplots(rows=2, cols=1, vertical_spacing=0.08)
+    for ri, (yrs, vals) in enumerate(zip(rows_yr, rows_val), start=1):
+        max_abs = max(abs(v) for v in ann_vals) if ann_vals else 100
+        cell_colors = []
+        for v in vals:
+            if v >= 0:
+                intensity = min(1.0, v / max_abs)
+                cell_colors.append(f"rgba(74,{int(180+42*intensity)},{int(128-64*intensity)},{0.4+0.5*intensity})")
+            else:
+                intensity = min(1.0, abs(v) / max_abs)
+                cell_colors.append(f"rgba({int(200+55*intensity)},{int(80-60*intensity)},{int(80-60*intensity)},{0.4+0.5*intensity})")
+
+        fig_heat.add_trace(go.Bar(
+            x=[str(y) for y in yrs],
+            y=[1]*len(yrs),
+            marker_color=cell_colors,
+            marker_line_color="#0d0d0d",
+            marker_line_width=2,
+            text=[f"<b>{v:+.0f}%</b>" for v in vals],
+            textposition="inside",
+            textfont=dict(size=9, family="JetBrains Mono,monospace",
+                          color=["#e8e0d4" if abs(v)>15 else "#aaa" for v in vals]),
+            hovertemplate="%{x}: %{customdata:+.1f}%<extra></extra>",
+            customdata=vals,
+            showlegend=False,
+        ), row=ri, col=1)
+
+    fig_heat.update_layout(
+        paper_bgcolor="#0d0d0d", plot_bgcolor="#111111",
+        height=180, margin=dict(l=20,r=20,t=10,b=20),
+        font=dict(family="JetBrains Mono,monospace", color="#666", size=9),
+        bargap=0.05,
+    )
+    fig_heat.update_yaxes(showticklabels=False, showgrid=False, zeroline=False)
+    fig_heat.update_xaxes(tickfont=dict(family="JetBrains Mono,monospace",size=9,color="#666"),
+                           showgrid=False, tickangle=0)
+    st.plotly_chart(fig_heat, use_container_width=True)
+
+    best_yr  = ann_years[ann_vals.index(max(ann_vals))]
+    worst_yr = ann_years[ann_vals.index(min(ann_vals))]
+    pos_yrs  = sum(1 for v in ann_vals if v > 0)
+    st.markdown(f"""<div class='insight-box'>
+AAPL has posted positive annual returns in <strong>{pos_yrs} of {len(ann_vals)} calendar years</strong>
+({pos_yrs/len(ann_vals)*100:.0f}% hit rate). Best year: <strong>{best_yr} ({max(ann_vals):+.0f}%)</strong>.
+Worst year: <strong>{worst_yr} ({min(ann_vals):+.0f}%)</strong>.
+The return distribution is right-skewed — most losses are contained below 40%, while gains can exceed 100% in breakout years.
+</div>""", unsafe_allow_html=True)
+
+    # ── CHART 3: Rolling 30-day Annualised Volatility ────────────────────────
+    st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+    st.markdown("""
+<div style='margin-bottom:6px'>
+  <div style='font-family:Playfair Display,serif;font-size:1.1rem;font-weight:700;color:#e8e0d4;line-height:1.3'>
+    Has AAPL become less volatile as it matured — or do risk regimes still cluster around macro shocks?
+  </div>
+  <div style='font-family:Source Serif 4,serif;font-size:0.8rem;color:#666;margin-top:3px'>
+    30-day rolling realised volatility (annualised σ of daily log-returns × √252).
+    Spikes reveal volatility clustering — a key challenge for sequence models trained on normalised price levels.
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+    df_plot["LogRet"]  = np.log(df_plot["Close"] / df_plot["Close"].shift(1))
+    df_plot["RVol30"]  = df_plot["LogRet"].rolling(30).std() * np.sqrt(252) * 100
+    df_plot["RVol252"] = df_plot["LogRet"].rolling(252).std() * np.sqrt(252) * 100
+
+    fig_vol = editorial_fig(320)
+    fig_vol.update_layout(
+        margin=dict(l=60,r=40,t=20,b=50),
+        yaxis=dict(ticksuffix="%", tickprefix="", title="Annualised Volatility (%)",
+                   gridcolor="#1e1e1e",
+                   tickfont=dict(family="JetBrains Mono,monospace",size=10,color="#666")),
+        xaxis=dict(gridcolor="#1e1e1e",
+                   tickfont=dict(family="JetBrains Mono,monospace",size=10,color="#666")))
+
+    # Fill under 30d vol, coloured by level
+    fig_vol.add_trace(go.Scatter(
+        x=df_plot["Date"], y=df_plot["RVol30"],
+        mode="lines", fill="tozeroy",
+        fillcolor="rgba(201,168,76,0.08)",
+        line=dict(color="#c9a84c", width=1.2),
+        name="30d Realised Vol",
+        hovertemplate="%{x|%b %d, %Y}<br>30d Vol: %{y:.1f}%<extra></extra>"))
+
+    fig_vol.add_trace(go.Scatter(
+        x=df_plot["Date"], y=df_plot["RVol252"],
+        mode="lines",
+        line=dict(color="#e8956d", width=1.5, dash="dash"),
+        name="252d Realised Vol",
+        hovertemplate="%{x|%b %d, %Y}<br>252d Vol: %{y:.1f}%<extra></extra>"))
+
+    # Annotate major volatility spikes
+    vol_spikes = [
+        ("2000-03-01", "Dot-com\nbust"),
+        ("2008-10-01", "GFC"),
+        ("2020-03-23", "COVID\ncrash"),
+    ]
+    for vd, vl in vol_spikes:
+        try:
+            vrow = df_plot.loc[df_plot["Date"] >= vd].iloc[0]
+            fig_vol.add_annotation(
+                x=vrow["Date"], y=vrow["RVol30"],
+                text=vl, showarrow=True, arrowhead=0,
+                arrowcolor="#f87171", arrowwidth=1,
+                font=dict(size=8, color="#f87171", family="JetBrains Mono,monospace"),
+                bgcolor="rgba(13,13,13,0.88)", bordercolor="#f87171", borderwidth=1,
+                ax=0, ay=-40)
+        except: pass
+
+    # Mean vol reference line
+    mean_vol = float(df_plot["RVol30"].mean())
+    fig_vol.add_hline(y=mean_vol, line_color="#333", line_dash="dot", line_width=1,
+        annotation_text=f"Long-run mean: {mean_vol:.1f}%",
+        annotation_font=dict(size=8,color="#555",family="JetBrains Mono,monospace"),
+        annotation_position="right")
+
+    # Shade train/test
+    fig_vol.add_vrect(x0=split_date, x1=df_raw["Date"].iloc[-1],
+        fillcolor="rgba(248,113,113,0.03)", line_width=0)
+
+    st.plotly_chart(fig_vol, use_container_width=True)
+
+    cur_vol = float(df_plot["RVol30"].dropna().iloc[-1])
+    st.markdown(f"""<div class='insight-box'>
+Current 30-day realised volatility: <strong>{cur_vol:.1f}%</strong> annualised
+(long-run mean: {mean_vol:.1f}%). Volatility clustering means high-vol regimes persist —
+a normalised LSTM trained on calm price levels faces distributional shift when forecasting
+through macro shocks. This is a core limitation of the models evaluated here.
+</div>""", unsafe_allow_html=True)
+
+    # ── CHART 4: $1,000 Invested — Hypothetical Growth ───────────────────────
+    st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+
+    invest_cols = st.columns([2, 1])
+    with invest_cols[0]:
+        st.markdown("""
+<div style='margin-bottom:6px'>
+  <div style='font-family:Playfair Display,serif;font-size:1.1rem;font-weight:700;color:#e8e0d4;line-height:1.3'>
+    What would $1,000 invested at IPO be worth today?
+  </div>
+  <div style='font-family:Source Serif 4,serif;font-size:0.8rem;color:#666;margin-top:3px'>
+    Hypothetical growth of $1,000 invested Dec 12, 1980 (AAPL IPO) vs the same sum in a 6% p.a. risk-free bond.
+    Log scale reveals the compounding trajectory — linear would compress 40 years into near-zero early history.
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+        initial = df_raw["Close"].iloc[0]
+        df_plot["Portfolio"] = (df_plot["Close"] / initial) * 1000
+        df_plot["RiskFree"]  = 1000 * (1.06 ** ((df_plot["Date"] - df_raw["Date"].iloc[0]).dt.days / 365.25))
+
+        final_port = float(df_plot["Portfolio"].iloc[-1])
+        final_rf   = float(df_plot["RiskFree"].iloc[-1])
+
+        fig_growth = editorial_fig(360)
+        fig_growth.update_layout(
+            margin=dict(l=70,r=40,t=20,b=50),
+            yaxis=dict(type="log", tickprefix="$", title="Portfolio Value (log scale)",
+                       gridcolor="#1e1e1e",
+                       tickfont=dict(family="JetBrains Mono,monospace",size=10,color="#666")),
+            xaxis=dict(gridcolor="#1e1e1e",
+                       tickfont=dict(family="JetBrains Mono,monospace",size=10,color="#666")))
+
+        fig_growth.add_trace(go.Scatter(
+            x=df_plot["Date"], y=df_plot["RiskFree"],
+            mode="lines", line=dict(color="#555", width=1.5, dash="dot"),
+            name="6% p.a. Risk-Free",
+            hovertemplate="%{x|%b %Y}<br>Risk-free: $%{y:,.0f}<extra></extra>"))
+
+        fig_growth.add_trace(go.Scatter(
+            x=df_plot["Date"], y=df_plot["Portfolio"],
+            mode="lines", line=dict(color="#c9a84c", width=2),
+            fill="tonexty", fillcolor="rgba(201,168,76,0.05)",
+            name="AAPL $1,000",
+            hovertemplate="%{x|%b %Y}<br>AAPL: $%{y:,.0f}<extra></extra>"))
+
+        # Annotate iPhone launch on growth curve
+        try:
+            iphone_row = df_plot.loc[df_plot["Date"] >= "2007-01-09"].iloc[0]
+            fig_growth.add_annotation(
+                x=iphone_row["Date"], y=iphone_row["Portfolio"],
+                text="iPhone launch<br>inflection",
+                showarrow=True, arrowhead=0, arrowcolor="#c9a84c",
+                font=dict(size=8, color="#c9a84c", family="JetBrains Mono,monospace"),
+                bgcolor="rgba(13,13,13,0.88)", bordercolor="#c9a84c", borderwidth=1,
+                ax=50, ay=-40)
+        except: pass
+
+        # Final value labels
+        fig_growth.add_annotation(
+            x=df_plot["Date"].iloc[-1], y=final_port,
+            text=f"AAPL<br>${final_port:,.0f}",
+            showarrow=False,
+            font=dict(size=9, color="#c9a84c", family="JetBrains Mono,monospace"),
+            bgcolor="rgba(13,13,13,0.88)", bordercolor="#c9a84c", borderwidth=1,
+            xanchor="right")
+        fig_growth.add_annotation(
+            x=df_plot["Date"].iloc[-1], y=final_rf,
+            text=f"Bond\n${final_rf:,.0f}",
+            showarrow=False,
+            font=dict(size=9, color="#666", family="JetBrains Mono,monospace"),
+            bgcolor="rgba(13,13,13,0.88)", bordercolor="#444", borderwidth=1,
+            xanchor="right")
+
+        fig_growth.add_vrect(x0=split_date, x1=df_raw["Date"].iloc[-1],
+            fillcolor="rgba(248,113,113,0.03)", line_width=0)
+
+        st.plotly_chart(fig_growth, use_container_width=True)
+
+    with invest_cols[1]:
+        st.markdown("<div style='height:36px'></div>", unsafe_allow_html=True)
+        outperform = final_port / final_rf
+        cagr_aapl = ((final_port / 1000) ** (1 / ((df_raw["Date"].iloc[-1] - df_raw["Date"].iloc[0]).days / 365.25)) - 1) * 100
+        for lbl, val, sub in [
+            ("AAPL $1k → today",   f"${final_port:,.0f}",        "from $1,000 at IPO"),
+            ("vs 6% Bond",         f"${final_rf:,.0f}",           "same period"),
+            ("Outperformance",     f"{outperform:.0f}×",          "AAPL ÷ bond value"),
+            ("AAPL CAGR",          f"{cagr_aapl:.1f}%",           "compound annual growth"),
+        ]:
+            color = "#c9a84c" if "AAPL" in lbl or "Out" in lbl or "CAGR" in lbl else "#888"
+            st.markdown(f"<div class='metric-card' style='margin-bottom:8px'><div class='metric-label'>{lbl}</div><div class='metric-value' style='font-size:1.1rem;color:{color}'>{val}</div><div class='metric-sub'>{sub}</div></div>", unsafe_allow_html=True)
+
+    st.markdown(f"""<div class='insight-box'>
+$1,000 invested at AAPL's IPO in December 1980 would be worth approximately
+<strong>${final_port:,.0f}</strong> today — a <strong>{outperform:.0f}× outperformance</strong>
+over a 6% risk-free bond held for the same period. The log-scale chart reveals that virtually all
+of the compounding occurred post-iPhone (2007), underscoring why the product-cycle regime boundary
+is the single most important structural break in this dataset for sequence model training.
+</div>""", unsafe_allow_html=True)
+
 
 # ── TAB 2 · Model Predictions ─────────────────────────────────────────────────
 with tab2:
@@ -1204,7 +1462,7 @@ Full architecture: LSTM({best_hps['units']}, return_sequences=True) → LSTM({be
 with tab5:
     st.markdown("<div class='kicker'>Research Design & Implementation</div>", unsafe_allow_html=True)
     st.markdown("<h3 style='margin:2px 0 4px'>Methodology</h3>", unsafe_allow_html=True)
-    st.markdown("<div class='caption-text'>Exploring deep learning approaches to equity price forecasting. Every transformation from raw ticker data to model evaluation is described below.</div>", unsafe_allow_html=True)
+    st.markdown("<div class='caption-text'>A faithful reproduction and extension of a Jupyter notebook exploring deep learning approaches to equity price forecasting. Every transformation from raw ticker data to model evaluation is described below.</div>", unsafe_allow_html=True)
     st.markdown("<div style='border-top:2px solid #c9a84c;margin:4px 0 20px'></div>", unsafe_allow_html=True)
 
     col_a,col_b = st.columns([1,1])
