@@ -997,7 +997,7 @@ with tab4:
                     x=pivot.columns.tolist()[best_idx[1]].upper(),
                     y=f"{pivot.index.tolist()[best_idx[0]]} units",
                     text="★ BEST",showarrow=False,
-                    font=dict(size=10,color="#0d0d0d",family="JetBrains Mono,monospace",weight=700),
+                    font=dict(size=10,color="#0d0d0d",family="JetBrains Mono,monospace"),
                     bgcolor="#4ade80",bordercolor="#4ade80",borderwidth=1)
                 st.plotly_chart(fig_hm, use_container_width=True)
 
