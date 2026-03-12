@@ -922,15 +922,15 @@ with tab2:
             bgcolor="rgba(13,13,13,0.88)",bordercolor="#f87171",borderwidth=1,
             ax=44,ay=-44,row=1,col=1)
 
-    # Annotate directional accuracy — use x2/y2 paper refs for subplot row 1
+    # Bottom-right of price panel — always clear of toolbar, legend and peak error
     fig2.add_annotation(
         xref="x domain", yref="y domain",
-        x=0.99, y=0.97,
+        x=0.99, y=0.06,
         text=f"Directional accuracy: {trend_correct:.1f}%",
         showarrow=False,
         font=dict(size=9,color="#c9a84c",family="JetBrains Mono,monospace"),
         bgcolor="rgba(13,13,13,0.85)",bordercolor="#c9a84c",borderwidth=1,
-        xanchor="right", yanchor="top",
+        xanchor="right", yanchor="bottom",
         row=1, col=1)
 
     fig2.update_layout(yaxis_title="Price (USD)")
