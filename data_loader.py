@@ -32,32 +32,13 @@ def fetch_aapl_data(start: str = "1980-01-01", end: str = None) -> pd.DataFrame:
     Tries multiple approaches with a short timeout so it fails fast
     in restricted environments (e.g. Hugging Face Spaces).
     """
-    import requests
-    import socket
-
-    # Short timeout — fail fast if network is blocked
-    socket.setdefaulttimeout(10)
-
-    session = requests.Session()
-    session.headers.update({
-        "User-Agent": (
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/120.0.0.0 Safari/537.36"
-        ),
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
-    })
-
-    # Try yf.download with session
+    # Let yfinance manage its own session (required for newer versions)
     df = yf.download(
         "AAPL",
         start=start,
         end=end,
         auto_adjust=False,
         progress=False,
-        session=session,
-        timeout=10,
     )
 
     if df is None or len(df) == 0:
