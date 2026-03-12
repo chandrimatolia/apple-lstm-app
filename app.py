@@ -582,7 +582,7 @@ with tab1:
     rows_yr  = [ann_years[:mid], ann_years[mid:]]
     rows_val = [ann_vals[:mid],  ann_vals[mid:]]
 
-    fig_heat = make_subplots(rows=2, cols=1, vertical_spacing=0.08)
+    fig_heat = make_subplots(rows=2, cols=1, vertical_spacing=0.04)
     for ri, (yrs, vals) in enumerate(zip(rows_yr, rows_val), start=1):
         max_abs = max(abs(v) for v in ann_vals) if ann_vals else 100
         cell_colors = []
@@ -594,16 +594,19 @@ with tab1:
                 intensity = min(1.0, abs(v) / max_abs)
                 cell_colors.append(f"rgba({int(200+55*intensity)},{int(80-60*intensity)},{int(80-60*intensity)},{0.4+0.5*intensity})")
 
+        # Embed both return % AND year inside each bar — no x-axis labels needed
+        bar_text = [f"<b>{v:+.0f}%</b><br>{y}" for v, y in zip(vals, yrs)]
+
         fig_heat.add_trace(go.Bar(
             x=[str(y) for y in yrs],
             y=[1]*len(yrs),
             marker_color=cell_colors,
             marker_line_color="#0d0d0d",
             marker_line_width=2,
-            text=[f"<b>{v:+.0f}%</b>" for v in vals],
+            text=bar_text,
             textposition="inside",
-            textfont=dict(size=9, family="JetBrains Mono,monospace",
-                          color=["#e8e0d4" if abs(v)>15 else "#aaa" for v in vals]),
+            textfont=dict(size=8, family="JetBrains Mono,monospace",
+                          color=["#e8e0d4" if abs(v)>15 else "#bbb" for v in vals]),
             hovertemplate="%{x}: %{customdata:+.1f}%<extra></extra>",
             customdata=vals,
             showlegend=False,
@@ -611,13 +614,13 @@ with tab1:
 
     fig_heat.update_layout(
         paper_bgcolor="#0d0d0d", plot_bgcolor="#111111",
-        height=180, margin=dict(l=20,r=20,t=10,b=20),
-        font=dict(family="JetBrains Mono,monospace", color="#666", size=9),
-        bargap=0.05,
+        height=200, margin=dict(l=20,r=20,t=10,b=10),
+        font=dict(family="JetBrains Mono,monospace", color="#666", size=8),
+        bargap=0.04,
     )
     fig_heat.update_yaxes(showticklabels=False, showgrid=False, zeroline=False)
-    fig_heat.update_xaxes(tickfont=dict(family="JetBrains Mono,monospace",size=9,color="#666"),
-                           showgrid=False, tickangle=0)
+    # Hide x-axis tick labels on both rows — year is embedded inside each bar
+    fig_heat.update_xaxes(showticklabels=False, showgrid=False)
     st.plotly_chart(fig_heat, use_container_width=True)
 
     best_yr  = ann_years[ann_vals.index(max(ann_vals))]
@@ -872,7 +875,7 @@ with tab2:
         height=560,
         legend=dict(bgcolor="rgba(13,13,13,0.9)",bordercolor="#2a2a2a",borderwidth=1,
                     font=dict(family="JetBrains Mono,monospace",size=10,color="#888"),
-                    x=0.01,y=0.99,xanchor="left",yanchor="top"),
+                    x=0.01,y=0.18,xanchor="left",yanchor="bottom"),
         margin=dict(l=60,r=40,t=20,b=50))
     fig2.update_xaxes(gridcolor="#1e1e1e",showline=True,linecolor="#2a2a2a",
                        tickfont=dict(family="JetBrains Mono,monospace",size=10,color="#666"))
@@ -919,15 +922,16 @@ with tab2:
             bgcolor="rgba(13,13,13,0.88)",bordercolor="#f87171",borderwidth=1,
             ax=44,ay=-44,row=1,col=1)
 
-    # Annotate directional accuracy
+    # Annotate directional accuracy — top right, away from legend
     fig2.add_annotation(
-        x=dates_test.iloc[int(len(dates_test)*0.05)],
-        y=float(np.max(y_true))*0.97,
+        xref="paper", yref="paper",
+        x=0.99, y=0.99,
         text=f"Directional accuracy: {trend_correct:.1f}%",
         showarrow=False,
         font=dict(size=9,color="#c9a84c",family="JetBrains Mono,monospace"),
         bgcolor="rgba(13,13,13,0.85)",bordercolor="#c9a84c",borderwidth=1,
-        row=1,col=1)
+        xanchor="right", yanchor="top",
+        row=1, col=1)
 
     fig2.update_layout(yaxis_title="Price (USD)")
     st.plotly_chart(fig2, use_container_width=True)
