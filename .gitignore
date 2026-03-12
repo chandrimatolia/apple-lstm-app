@@ -1,3 +1,8 @@
+__pycache__/
+*.pyc
+.env
+saved_models/*.keras
+saved_models/*.pkl
+.streamlit/secrets.toml
 lstm_tuner_models/
 lstm_2d_tuner_models/
-saved_models/
